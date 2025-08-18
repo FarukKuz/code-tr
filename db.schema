@@ -1,0 +1,112 @@
+
+datasource db {
+  provider = "postgresql" // Örnek olarak PostgreSQL kullanılmıştır.
+  url      = env("DATABASE_URL")
+}
+
+// 2. Prisma Client oluşturucusunu yapılandırın.
+generator client {
+  provider = "prisma-client-js"
+}
+
+// === ENUMS ===
+// Belirli ve sabit değerler için Enum'lar kullanılır.
+
+enum SimStatus {
+  active
+  blocked
+}
+
+enum ActionStatus {
+  done
+  pending
+  failed
+}
+
+model Sim {
+  sim_id      Int      @id @default(autoincrement())
+  customer_id Int
+  device_type String
+  apn         String
+  plan_id     Int
+  status      SimStatus
+  city        String
+
+  // İlişkiler
+  plan          IotPlan       @relation(fields: [plan_id], references: [plan_id])
+  deviceProfile DeviceProfile @relation(fields: [device_type], references: [device_type])
+  usages        Usage[]
+  actionLogs    ActionLog[]
+
+  @@map("sims") // Tablo adını 'sims' olarak belirler.
+}
+
+// IoT Planları
+model IotPlan {
+  plan_id          Int      @id @default(autoincrement())
+  plan_name        String   @unique
+  monthly_quota_mb Int
+  monthly_price    Decimal  @db.Decimal(10, 2)
+  overage_per_mb   Decimal  @db.Decimal(10, 2)
+  apn              String
+
+  // İlişkiler
+  sims Sim[]
+
+  @@map("iot_plans")
+}
+
+// Aylık Kullanım Verileri
+model Usage {
+  id           Int      @id @default(autoincrement())
+  sim_id       Int
+  timestamp_mb DateTime @db.Timestamp()
+  mb_used      Int
+  roaming_mb   Int
+
+  // İlişkiler
+  sim Sim @relation(fields: [sim_id], references: [sim_id])
+
+  @@index([sim_id, timestamp_mb]) // Sık sorgulanan alanlar için index.
+  @@map("usage_30d")
+}
+
+// Cihaz Profilleri
+model DeviceProfile {
+  device_type           String  @id
+  expected_daily_mb_min Int
+  expected_daily_mb_max Int
+  roaming_expected      Boolean
+
+  // İlişkiler
+  sims Sim[]
+
+  @@map("device_profiles")
+}
+
+// Ek Paketler
+model AddOnPack {
+  addon_id Int     @id @default(autoincrement())
+  name     String  @unique
+  extra_mb Int
+  price    Decimal @db.Decimal(10, 2)
+  apn      String
+
+  @@map("add_on_packs")
+}
+
+// Aksiyon Kayıtları
+model ActionLog {
+  action_id  String       @id
+  sim_id     Int
+  action     String
+  reason     String
+  created_at DateTime     @default(now())
+  actor      String
+  status     ActionStatus
+
+  // İlişkiler
+  sim Sim @relation(fields: [sim_id], references: [sim_id])
+
+  @@map("actions_log")
+}

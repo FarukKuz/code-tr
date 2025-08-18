@@ -1,0 +1,6 @@
+{
+  "status"  :true | false,
+  "messages":["işlem başarılı" | "veriler girilirken bir hata oluştu."],
+  "code"    :20x | 40x,
+  "data"    :  any
+}

@@ -1,0 +1,5 @@
+addon_id,name,extra_mb,price,apn
+702,IoT +500MB,500,24.9,apn-iot
+705,Video +5GB,5120,39.9,apn-video
+706,Data +3GB,3072,29.9,apn-data
+709,M2M +5GB,5120,59.9,apn-m2m

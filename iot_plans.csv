@@ -1,0 +1,6 @@
+plan_id,plan_name,monthly_quota_mb,monthly_price,overage_per_mb,apn
+11,IoT Basic 500MB,500,39.9,0.2,apn-m2m
+12,IoT Plus 2GB,2048,79.9,0.15,apn-iot
+13,Video Cam 5GB,5120,149.9,0.12,apn-data
+14,Video Cam 10GB,10240,249.9,0.1,apn-video
+15,Unlimited 50GB,51200,499.9,0.08,apn-video

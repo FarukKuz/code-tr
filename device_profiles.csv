@@ -1,0 +1,8 @@
+device_type,expected_daily_mb_min,expected_daily_mb_max,roaming_expected
+POS,5,25,False
+Camera,200,800,False
+Sensor,1,5,False
+Gateway,50,200,False
+Tracker,8,40,True
+SmartMeter,2,12,False
+ATM,15,80,False

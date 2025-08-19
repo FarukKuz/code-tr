@@ -22,7 +22,7 @@ struct SIMCard: Identifiable, Codable {
     let deviceType: String
     let apn: String
     let planId: Int
-    let status: SIMStatus
+    var status: SIMStatus
     let city: String
     
     // İlişkili veriler (JOIN'den gelecek)
@@ -45,12 +45,14 @@ struct SIMCard: Identifiable, Codable {
 
 enum SIMStatus: String, Codable, CaseIterable {
     case active = "active"
-    case blocked = "blocked" // inactive yerine blocked
+    case blocked = "blocked"
+    case frozen = "frozen"
     
     var displayName: String {
         switch self {
         case .active: return "Aktif"
         case .blocked: return "Engelli"
+        case .frozen: return "Dondurulmuş"
         }
     }
     
@@ -58,6 +60,7 @@ enum SIMStatus: String, Codable, CaseIterable {
         switch self {
         case .active: return "green"
         case .blocked: return "red"
+        case .frozen: return "yellow"
         }
     }
 }
@@ -137,6 +140,7 @@ enum BulkAction: String, CaseIterable {
     case throttle = "throttle"
     case block = "block_sim"
     case notify = "notify_user"
+    case activate = "activate"
     
     var displayName: String {
         switch self {
@@ -144,6 +148,7 @@ enum BulkAction: String, CaseIterable {
         case .throttle: return "Hızı Kısıtla"
         case .block: return "SIM'i Engelle"
         case .notify: return "Bildirim Gönder"
+        case .activate: return "Aktifleştir"
         }
     }
     
@@ -153,6 +158,7 @@ enum BulkAction: String, CaseIterable {
         case .throttle: return "SIM kartının hızını kısıtlayacak"
         case .block: return "SIM kartını tamamen engelleyecek"
         case .notify: return "Kullanıcıya bildirim gönderecek"
+        case .activate: return "SIM kartını aktifleştirecek"
         }
     }
 }

@@ -378,6 +378,7 @@ struct SingleActionButton: View {
         case .throttle: return .yellow
         case .block: return .red
         case .notify: return .blue
+        case .activate: return .green
         }
     }
 }
@@ -390,6 +391,7 @@ extension BulkAction {
         case .throttle: return "speedometer"
         case .block: return "xmark.shield"
         case .notify: return "bell"
+        case .activate: return "checkmark"
         }
     }
 }

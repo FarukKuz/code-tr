@@ -53,6 +53,7 @@ extension BulkAction {
         case .throttle: return "speedometer"
         case .block: return "xmark.shield"
         case .notify: return "bell"
+        case.activate: return "arrow.up.circle.fill"
         }
     }
     
@@ -62,6 +63,7 @@ extension BulkAction {
         case .throttle: return .yellow
         case .block: return .red
         case .notify: return .blue
+        case .activate: return .green
         }
     }
 }
@@ -72,6 +74,7 @@ extension SIMStatus {
         switch self {
         case .active: return .green
         case .blocked: return .red
+        case .frozen: return .orange
         }
     }
 }

@@ -36,7 +36,7 @@ struct SIMCardList: View {
                                 viewModel.performSingleAction(
                                     action,
                                     for: simCard.simId,
-                                    reason: "user_action_\(action.rawValue)"
+                                    reason: "user_action_\(action.rawValue)_by_FarukKuz_at_2025-08-19_01:20:40"
                                 )
                             },
                             onViewTimeSeriesRequested: {
@@ -64,7 +64,7 @@ struct SIMCardList: View {
     }
 }
 
-// MARK: - SIM Card Row
+// MARK: - SIM Card Row (unchanged)
 struct SIMCardRowView: View {
     let simCard: SIMCard
     let isSelected: Bool
@@ -141,7 +141,7 @@ struct SIMCardRowView: View {
     }
 }
 
-// MARK: - Enhanced SIM Detail View
+// MARK: - Enhanced SIM Detail View with Dynamic Actions
 struct EnhancedSIMDetailView: View {
     let simCard: SIMCard
     let isLoading: Bool
@@ -251,7 +251,7 @@ struct EnhancedSIMDetailView: View {
                 }
             }
             
-            // Action Buttons
+            // Dynamic Action Buttons
             VStack(alignment: .leading, spacing: 16) {
                 SectionHeader(title: "Yapılabilecek İşlemler", icon: "gearshape")
                 
@@ -267,8 +267,9 @@ struct EnhancedSIMDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                 } else {
+                    // DİNAMİK BUTONLAR - SIM durumuna göre değişir
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
-                        ForEach(BulkAction.allCases, id: \.self) { action in
+                        ForEach(getAvailableActions(for: simCard), id: \.self) { action in
                             let isDisabled = isActionDisabled(action)
                             
                             SIMActionButton(
@@ -318,12 +319,36 @@ struct EnhancedSIMDetailView: View {
         }
     }
     
-    private func isActionDisabled(_ action: BulkAction) -> Bool {
-        guard let activeAction = actionState?.currentAction, activeAction.isActive else {
-            return false
+    // DİNAMİK BUTON MANTAĞI - SIM durumuna göre farklı butonlar
+    private func getAvailableActions(for simCard: SIMCard) -> [BulkAction] {
+        var actions: [BulkAction] = []
+        
+        // Aktif action varsa sadece notify'a izin ver
+        if let activeAction = actionState?.currentAction, activeAction.isActive {
+            return [.notify]
         }
         
-        if activeAction.action == .freeze {
+        // SIM durumuna göre mevcut butonları belirle
+        switch simCard.status {
+        case .active:
+            // Aktif SIM için: Dondur, Hızı Sınırla, Engelle, Bildirim
+            actions = [.freeze, .throttle, .block, .notify]
+            
+        case .blocked:
+            // Engelli SIM için: Aktifleştir, Bildirim
+            actions = [.activate, .notify]
+            
+        default:
+            // Diğer durumlar (frozen vs) için: Aktifleştir, Bildirim
+            actions = [.activate, .notify]
+        }
+        
+        return actions
+    }
+    
+    private func isActionDisabled(_ action: BulkAction) -> Bool {
+        // Aktif action varsa sadece notify aktif
+        if let activeAction = actionState?.currentAction, activeAction.isActive {
             return action != .notify
         }
         
@@ -331,12 +356,12 @@ struct EnhancedSIMDetailView: View {
     }
     
     private func loadActionState() {
-        // Current UTC time: 2025-08-19 00:35:12
+        // Current UTC time: 2025-08-19 01:20:40
         // Current User: FarukKuz
-        // Mock: SIM 2001 is frozen
+        // Mock: SIM 2001 is frozen - 1 hour ago başladı, 22 saat 39 dakika kaldı
         if simCard.simId == 2001 {
-            let startTime = "2025-08-18 23:35:12" // 1 saat önce başladı
-            let endTime = "2025-08-19 23:35:12"   // 23 saat kaldı
+            let startTime = "2025-08-19 00:20:40" // 1 saat önce başladı
+            let endTime = "2025-08-20 00:20:40"   // 22 saat 39 dakika kaldı
             
             actionState = SIMActionState(
                 simId: simCard.simId,
@@ -344,7 +369,7 @@ struct EnhancedSIMDetailView: View {
                     actionType: BulkAction.freeze.rawValue,
                     startTime: startTime,
                     endTime: endTime,
-                    reason: "Anormal kullanım tespit edildi - UTC: 2025-08-19 00:35:12",
+                    reason: "Anormal kullanım tespit edildi - User: FarukKuz, Time: 2025-08-19 01:20:40 UTC",
                     actor: "FarukKuz"
                 ),
                 history: []
@@ -384,8 +409,7 @@ struct EnhancedSIMDetailView: View {
     }
 }
 
-// MARK: - Supporting Views
-
+// MARK: - Supporting Views (unchanged)
 struct SectionHeader: View {
     let title: String
     let icon: String
@@ -583,4 +607,3 @@ struct SIMStatusBadge: View {
             .foregroundColor(.white)
     }
 }
-

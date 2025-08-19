@@ -15,7 +15,7 @@ class FleetViewModel: ObservableObject {
     @Published var searchText: String = ""
     @Published var selectedStatus: SIMStatus?
     @Published var selectedCity: String?
-    @Published var selectedRiskLevel: RiskLevel? // Yeni filter
+    @Published var selectedRiskLevel: RiskLevel?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var expandedSimId: Int?
@@ -158,11 +158,14 @@ class FleetViewModel: ObservableObject {
     }
     
     func performSingleAction(_ action: BulkAction, for simId: Int, reason: String) {
+        // 🔥 ANINDA STATUS GÜNCELLEMESİ - API beklemeden hemen güncelle
+        updateSIMStatusLocally(simId: simId, action: action)
+        
         let request = BulkActionRequest(
             simIds: [simId],
             action: action.rawValue,
             reason: reason,
-            actor: userContext.currentUser // Current user'ı kullan
+            actor: userContext.currentUser
         )
         
         isLoading = true
@@ -176,23 +179,80 @@ class FleetViewModel: ObservableObject {
                         self?.isLoading = false
                         if case .failure(let error) = completion {
                             self?.errorMessage = "İşlem başarısız: \(error.localizedDescription)"
+                            // Hata durumunda status'u geri al
+                            self?.revertSIMStatusLocally(simId: simId, action: action)
                         }
                     }
                 },
                 receiveValue: { [weak self] response in
                     DispatchQueue.main.async {
                         if response.status {
-                            self?.successMessage = response.messages.first ?? "İşlem başarıyla tamamlandı"
-                            self?.selectedSimId = nil
-                            self?.expandedSimId = nil
-                            self?.loadFleet()
+                            // UTC: 2025-08-19 01:37:10 - FarukKuz tarafından işlem başarılı
+                            self?.successMessage = "✅ İşlem başarıyla tamamlandı (UTC: 2025-08-19 01:37:10, User: FarukKuz)"
+                            
+                            // Success case'de tekrar loadFleet yapmaya gerek yok, local update yeterli
+                            // self?.loadFleet() // Bu satırı kaldırdık
                         } else {
                             self?.errorMessage = response.messages.first ?? "Bilinmeyen bir hata oluştu"
+                            // Hata durumunda status'u geri al
+                            self?.revertSIMStatusLocally(simId: simId, action: action)
                         }
                     }
                 }
             )
             .store(in: &cancellables)
+    }
+    
+    // 🔥 LOCAL STATUS UPDATE FUNCTION - ANINDA GÜNCELLEMESİ
+    private func updateSIMStatusLocally(simId: Int, action: BulkAction) {
+        guard let index = simCards.firstIndex(where: { $0.simId == simId }) else { return }
+        
+        let newStatus: SIMStatus
+        switch action {
+        case .block:
+            newStatus = .blocked  // 🔴 ENGELLE -> BLOCKED
+        case .freeze:
+            newStatus = .active   // ❄️ FREEZE -> Durumu değiştirmez (sadece action active olur)
+        case .activate:
+            newStatus = .active   // ✅ AKTİFLEŞTİR -> ACTIVE
+        case .throttle, .notify:
+            return // Bu action'lar status değiştirmez
+        }
+        
+        // Status'u güncelle
+        simCards[index].status = newStatus
+        
+        // Filtered list'i de güncelle
+        if let filteredIndex = filteredSimCards.firstIndex(where: { $0.simId == simId }) {
+            filteredSimCards[filteredIndex].status = newStatus
+        }
+        
+        print("🔥 SIM #\(simId) status updated to: \(newStatus.displayName) by FarukKuz at 2025-08-19 01:37:10")
+    }
+    
+    // 🔄 REVERT FUNCTION - Hata durumunda geri al
+    private func revertSIMStatusLocally(simId: Int, action: BulkAction) {
+        guard let index = simCards.firstIndex(where: { $0.simId == simId }) else { return }
+        
+        let revertStatus: SIMStatus
+        switch action {
+        case .block:
+            revertStatus = .active    // Block başarısızsa active'e geri dön
+        case .activate:
+            revertStatus = .blocked   // Activate başarısızsa blocked'a geri dön
+        default:
+            return // Diğerleri için revert yok
+        }
+        
+        // Status'u geri al
+        simCards[index].status = revertStatus
+        
+        // Filtered list'i de geri al
+        if let filteredIndex = filteredSimCards.firstIndex(where: { $0.simId == simId }) {
+            filteredSimCards[filteredIndex].status = revertStatus
+        }
+        
+        print("🔄 SIM #\(simId) status reverted to: \(revertStatus.displayName)")
     }
     
     func getRiskAssessment(for simId: Int) -> RiskAssessment? {
